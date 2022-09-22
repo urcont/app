@@ -1,41 +1,68 @@
 package com.edu.ulab.app.storage;
 
 import com.edu.ulab.app.entity.Entity;
+import com.edu.ulab.app.exception.NotFoundException;
+import org.springframework.context.annotation.Scope;
+import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Repository;
 
-import java.util.Set;
+import java.util.*;
 
-public class Storage {
-    StorageInterface storageObject;
+@Repository
+@Scope("prototype")
+public class Storage<T extends Entity> implements StorageInterface<T> {
+    StorageIdData storageIdData;
+    private final Map<Long, T> entityMap;
+    private final Map<Long, Set<Long>> childrenEntityMap;
 
-    public Storage(StorageInterface storageObject) {
-        this.storageObject = storageObject;
+    public Storage(StorageIdData storageIdData) {
+        this.storageIdData = storageIdData;
+        this.entityMap = new HashMap<>();
+        this.childrenEntityMap = new HashMap<>();
     }
 
-    public Long add(Entity entity) {
-        return storageObject.add(entity);
+    @Override
+    public Long add(T entity) {
+        Long id = storageIdData.getNewId(entity.getClass().getName());
+        entity.setId(id);
+        save(entity);
+        return id;
     }
 
-    public void save(Entity entity) {
-        storageObject.save(entity);
+    @Override
+    public void save(T entity) {
+        entityMap.put(entity.getId(), entity);
+        saveChildConnection(entity);
     }
 
-    public Entity get(Long id) {
-        return storageObject.get(id);
+    @Override
+    public Optional<T> get(Long id) {
+        T res = entityMap.get(id);
+        return Optional.ofNullable(res);
     }
 
+    @Override
     public Set<Long> getChildList(Long id) {
-        return storageObject.getChildList(id);
+        var res = childrenEntityMap.get(id);
+        if(res == null)
+            return new HashSet<>();
+        return childrenEntityMap.get(id);
     }
 
+    @Override
     public void delete(Long id) {
-        storageObject.delete(id);
+        entityMap.remove(id);
+        childrenEntityMap.remove(id);
     }
 
-    //todo создать хранилище в котором будут содержаться данные
-    // сделать абстракции через которые можно будет производить операции с хранилищем
-    // продумать логику поиска и сохранения
-    // продумать возможные ошибки
-    // учесть, что при сохранеии юзера или книги, должен генерироваться идентификатор
-    // продумать что у узера может быть много книг и нужно создать эту связь
-    // так же учесть, что методы хранилища принимают друго тип данных - учесть это в абстракции
+    private void saveChildConnection(T entity) {
+        Long parentId = entity.getUserId();
+        if (parentId != null) {
+            Set<Long> childrenSet = childrenEntityMap.get(parentId);
+            if (childrenSet == null)
+                childrenSet = new HashSet<>();
+            childrenSet.add(entity.getId());
+            childrenEntityMap.put(parentId, childrenSet);
+        }
+    }
 }

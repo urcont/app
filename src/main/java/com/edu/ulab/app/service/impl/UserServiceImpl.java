@@ -1,55 +1,55 @@
 package com.edu.ulab.app.service.impl;
 
 import com.edu.ulab.app.dto.UserDto;
-import com.edu.ulab.app.entity.Entity;
 import com.edu.ulab.app.entity.UserEntity;
-import com.edu.ulab.app.exception.NotFoundException;
+import com.edu.ulab.app.exception.UserNotFoundException;
+import com.edu.ulab.app.mapper.UserMapper;
 import com.edu.ulab.app.service.UserService;
 import com.edu.ulab.app.storage.Storage;
-import com.edu.ulab.app.storage.StorageIdDataMap;
-import com.edu.ulab.app.storage.StorageMap;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+
+import java.util.Optional;
 
 @Slf4j
 @Service
 public class UserServiceImpl implements UserService {
-    Storage usersStorage = new Storage(new StorageMap(UserEntity.class.getName(), new StorageIdDataMap()));
+    Storage<UserEntity> usersStorage;
+    UserMapper userMapper;
+
+    public UserServiceImpl(Storage<UserEntity> usersStorage, UserMapper userMapper) {
+        this.usersStorage = usersStorage;
+        this.userMapper = userMapper;
+    }
 
     @Override
     public UserDto createUser(UserDto userDto) {
-        Entity entity = new UserEntity();
-        entity.getEntityFromDto(userDto);
-        Long id = usersStorage.add(entity);
+        Long id = usersStorage.add(userMapper.userDtoToUserEntity(userDto));
         userDto.setId(id);
-
+        log.info("user created, user id assigned, user saved");
         return userDto;
     }
 
     @Override
     public UserDto updateUser(UserDto userDto) {
-        Entity entity = checkGetEntity(userDto.getId());
-        entity.getEntityFromDto(userDto);
+        UserEntity entity = userMapper.userDtoToUserEntity(userDto);
         usersStorage.save(entity);
-        return (UserDto) entity.getDtoFromEntity();
+        log.info("user updated, user saved");
+        return userMapper.userEntityToUserDto(entity);
     }
 
     @Override
     public UserDto getUserById(Long id) {
-        return (UserDto) checkGetEntity(id).getDtoFromEntity();
+        log.info("getting user with id - {}", id);
+        Optional<UserEntity> optionalUserEntity = usersStorage.get(id);
+        if (optionalUserEntity.isEmpty())
+            throw new UserNotFoundException(String.format("there is no user with id - %d", id));
+        return userMapper.userEntityToUserDto(optionalUserEntity.get());
     }
 
     @Override
     public void deleteUserById(Long id) {
-        checkGetEntity(id);
+        log.info("deleting user with id - {}", id);
         usersStorage.delete(id);
-    }
-
-    private Entity checkGetEntity(Long id) {
-        Entity entity = usersStorage.get(id);
-        if (entity == null) {
-            throw new NotFoundException(String.format("There is no user with id: %d", id));
-        }
-        return entity;
     }
 }

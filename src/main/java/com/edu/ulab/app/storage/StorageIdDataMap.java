@@ -1,6 +1,7 @@
 package com.edu.ulab.app.storage;
 
 import com.edu.ulab.app.exception.NotFoundException;
+import org.springframework.stereotype.Repository;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -8,8 +9,10 @@ import java.util.Map;
 /**
  * Some kind of unique id control implementation.
  */
+@Repository
 public class StorageIdDataMap extends StorageIdData {
     private final Map<String, Long> idMap = new HashMap<>();
+
     @Override
     public synchronized Long getNewId(String clazz) {
         Long lastId = idMap.get(clazz);

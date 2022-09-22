@@ -6,7 +6,7 @@ import com.edu.ulab.app.dto.BookDto;
 import java.util.Set;
 
 public interface BookService {
-    BookDto createBook(BookDto bookDto);
+    BookDto createBook(Long parentId, BookDto bookDto);
 
     BookDto updateBook(BookDto bookDto);
 

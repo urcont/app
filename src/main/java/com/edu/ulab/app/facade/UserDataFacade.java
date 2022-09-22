@@ -36,14 +36,13 @@ public class UserDataFacade {
 
         UserDto createdUser = userService.createUser(userDto);
         log.info("Created user: {}", createdUser);
-
+        final Long parentId = userDto.getId();
         List<Long> bookIdList = userBookRequest.getBookRequests()
                 .stream()
                 .filter(Objects::nonNull)
                 .map(bookMapper::bookRequestToBookDto)
-                .peek(bookDto -> bookDto.setUserId(createdUser.getId()))
                 .peek(mappedBookDto -> log.info("Mapped book: {}", mappedBookDto))
-                .map(bookService::createBook)
+                .map(bookDto -> bookService.createBook(parentId, bookDto))
                 .peek(createdBook -> log.info("Created book: {}", createdBook))
                 .map(BookDto::getId)
                 .toList();
@@ -66,14 +65,13 @@ public class UserDataFacade {
 
         UserDto updatedUser = userService.updateUser(userDto);
         log.info("Updated user: {}", updatedUser);
-
+        final Long parentId = updatedUser.getId();
         List<Long> bookIdList = userBookRequest.getBookRequests()
                 .stream()
                 .filter(Objects::nonNull)
                 .map(bookMapper::bookRequestToBookDto)
-                .peek(bookDto -> bookDto.setUserId(updatedUser.getId()))
                 .peek(mappedBookDto -> log.info("Mapped book: {}", mappedBookDto))
-                .map(bookService::createBook)
+                .map(bookDto -> bookService.createBook(parentId, bookDto))
                 .peek(createdBook -> log.info("Created book: {}", createdBook))
                 .map(BookDto::getId)
                 .toList();
